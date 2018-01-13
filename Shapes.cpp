@@ -8,6 +8,8 @@
 #include <sstream>
 
 #include "Renderer.h"
+#include "VertexBuffer.h"
+#include "IndexBuffer.h"
 
 using namespace std; 
 
@@ -136,6 +138,7 @@ int main(void)
     //print open gl versions
     cout << glGetString(GL_VERSION) << endl; 
 
+    {
     //positions of vertex
     float positions[] = { 
        -0.5f, -0.5f, //0
@@ -149,50 +152,23 @@ int main(void)
         0, 1, 2, 
         2, 3, 0
     };
-
-    //id of the generated buffer
-    unsigned int buffer; 
-    //generate buffer(s)
-    GLCall(glGenBuffers(1, &buffer));
-    //select buffer to render data
-    GLCall(glBindBuffer(GL_ARRAY_BUFFER, buffer));
-    //cout << "Binded buffer to opengl" << endl;
-    GLCall(glBufferData(GL_ARRAY_BUFFER, 4 * 2 * sizeof(float), positions, GL_STATIC_DRAW));  
-    //cout << "Generated buffer data addeed posistions" << endl;
+  
     GLuint vao = 0;
     GLCall(glGenVertexArrays(1, &vao));
     GLCall(glBindVertexArray(vao));
 
-    //code to reuse indices
-    unsigned int ibo; 
-    GLCall(glGenBuffers(1, &ibo));
-    GLCall(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo));
-    GLCall(glBufferData(GL_ELEMENT_ARRAY_BUFFER, 6 * sizeof(unsigned int), indices, GL_STATIC_DRAW));  
-
-    GLCall(glEnableVertexAttribArray(0));
-    //cout << "Enable Vertex Attrib Array" << endl;
+    VertexBuffer vb(positions, 4 *2 * sizeof(float));
     
-    GLCall(glBindBuffer(GL_ARRAY_BUFFER, buffer));
-
+    GLCall(glEnableVertexAttribArray(0));
     GLCall(glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0));
-    //cout << "Specified layout of vertex buffer" << endl;
+    
+    IndexBuffer ib(indices, 6); 
 
     ShaderProgramSource source = ParseShader("res/shaders/Basic.shader"); 
     
-    //Prints out text output of shaders
-    /*
-    cout << "VERTEX" << endl; 
-    cout << source.VertexSource << endl; 
-    cout << "FRAGMENT" << endl; 
-    cout << source.FragmentSource << endl; 
-    */
-
-    //unsigned int shader = CreateShader(vertexShader, fragmentShader); 
     unsigned int shader = CreateShader(source.VertexSource, source.FragmentSource);
-    //cout << "Create shaders" << endl;
 
     GLCall(glUseProgram(shader));  
-    //cout << "Use shaders" << endl;
     
     //checks for linking errors
     int  success;
@@ -217,6 +193,8 @@ int main(void)
         GLCall(glClear(GL_COLOR_BUFFER_BIT));
 
         GLCall(glUniform4f(location, r, 0.3f, 0.8f, 1.0f)); 
+        
+        ib.Bind(); 
 
         GLCall(glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr)); 
 
@@ -241,7 +219,7 @@ int main(void)
     }
 
     GLCall(glDeleteProgram(shader)); 
-
+    }
     GLCall(glfwTerminate());
     return 0;
 }
